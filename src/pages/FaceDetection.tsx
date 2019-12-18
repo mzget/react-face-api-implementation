@@ -2,11 +2,16 @@ import React from "react";
 import * as faceapi from "face-api.js";
 import $ from "jquery";
 
+import SelectDetector, {
+  TINY_FACE_DETECTOR,
+  SSD_MOBILENETV1
+} from "commons/SelectDetector";
+
 let forwardTimes: number[] = [];
+let stream: MediaStream;
 export function FaceDetection() {
-  const SSD_MOBILENETV1 = "ssd_mobilenetv1";
-  const TINY_FACE_DETECTOR = "tiny_face_detector";
-  let selectedFaceDetector = TINY_FACE_DETECTOR;
+  const defaultDetector = TINY_FACE_DETECTOR;
+  let [selectedFaceDetector, setFaceDetector] = React.useState(defaultDetector);
   // ssd_mobilenetv1 options
   let minConfidence = 0.5;
   // tiny_face_detector options
@@ -64,22 +69,20 @@ export function FaceDetection() {
     setTimeout(() => onPlay());
   }, [getFaceDetectorOptions, isFaceDetectionModelLoaded, updateTimeStats]);
 
-  async function initFaceDetectionControls() {
-    // const faceDetectorSelect = $("#selectFaceDetector");
-    // faceDetectorSelect.val(selectedFaceDetector);
-    // faceDetectorSelect.on("change", onSelectedFaceDetectorChanged);
-    // faceDetectorSelect.material_select();
-    // const inputSizeSelect = $("#inputSize");
-    // inputSizeSelect.val(inputSize);
-    // inputSizeSelect.on("change", onInputSizeChanged);
-    // inputSizeSelect.material_select();
+  const handleChange = React.useCallback(
+    value => {
+      console.log(`selected ${value}`);
+      setFaceDetector(value);
+      getCurrentFaceDetectionNet()?.loadFromUri("/weights");
+    },
+    [getCurrentFaceDetectionNet]
+  );
 
-    await getCurrentFaceDetectionNet()?.loadFromUri("/weights");
-  }
   async function run() {
+    await getCurrentFaceDetectionNet()?.loadFromUri("/weights");
     // try to access users webcam and stream the images
     // to the video element
-    const stream = await navigator.mediaDevices.getUserMedia({
+    stream = await navigator.mediaDevices.getUserMedia({
       video: { width: { min: 640 } }
     });
     const videoEl = $("#inputVideo").get(0) as HTMLVideoElement;
@@ -88,10 +91,13 @@ export function FaceDetection() {
 
   React.useEffect(() => {
     console.log("init", faceapi.nets);
-    initFaceDetectionControls();
     run();
+    return () => {
+      stream.getTracks().forEach(track => track.stop());
+    };
   });
 
+  console.log("face-detection");
   return (
     <div style={{ position: "relative", maxWidth: "640px" }}>
       <video
@@ -104,6 +110,10 @@ export function FaceDetection() {
       <canvas id="overlay" style={{ position: "absolute", top: 0, left: 0 }} />
       <div id="fps_meter" style={{ marginTop: 20 }}>
         <h5>Mode : {selectedFaceDetector}</h5>
+        <SelectDetector
+          defaultMode={defaultDetector}
+          handleChange={handleChange}
+        />
         <div>
           <label>Time:</label>
           <input disabled value="-" id="time" type="text" />
