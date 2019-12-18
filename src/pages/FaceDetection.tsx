@@ -10,7 +10,7 @@ export function FaceDetection() {
   // ssd_mobilenetv1 options
   let minConfidence = 0.5;
   // tiny_face_detector options
-  let inputSize = 512;
+  let inputSize = 128;
   let scoreThreshold = 0.5;
 
   const getCurrentFaceDetectionNet = React.useCallback(() => {
@@ -87,7 +87,7 @@ export function FaceDetection() {
   }
 
   React.useEffect(() => {
-    console.log("init");
+    console.log("init", faceapi.nets);
     initFaceDetectionControls();
     run();
   });
@@ -103,6 +103,7 @@ export function FaceDetection() {
       ></video>
       <canvas id="overlay" style={{ position: "absolute", top: 0, left: 0 }} />
       <div id="fps_meter" style={{ marginTop: 20 }}>
+        <h5>Mode : {selectedFaceDetector}</h5>
         <div>
           <label>Time:</label>
           <input disabled value="-" id="time" type="text" />
